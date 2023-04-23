@@ -10,6 +10,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
+import jakarta.validation.Valid;
+import tfip.day27workshop.model.Comment;
 import tfip.day27workshop.model.Review;
 
 @Repository
@@ -38,9 +40,20 @@ public class ReviewRepository {
     }
 
     public String saveReview(Review r) {
-        // todo
+        Document result = mongo.insert(r.toDocument(), COLLECTION_REVIEWS);
 
-        return null;
+        return result.getObjectId("_id").toString();
+    }
+
+    public void updateReview(String reviewId, @Valid Comment c) {
+        Query q = new Query();
+        q.addCriteria(Criteria.where("_id").is(reviewId));
+        Review r = Review.create(mongo.findOne(q, Document.class, COLLECTION_REVIEWS));
+        r.addComment(c);
+        System.out.println("review >> " + r);
+        Document result = mongo.findAndReplace(q,r.toDocument(), COLLECTION_REVIEWS);
+        System.out.println(result);
+        // return result.getObjectId("_id");
     }
 
 }

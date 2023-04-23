@@ -5,13 +5,18 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.json.Json;
+import jakarta.validation.Valid;
+import tfip.day27workshop.model.Comment;
 import tfip.day27workshop.model.Review;
 import tfip.day27workshop.service.GamesService;
 import tfip.day27workshop.service.ReviewService;
@@ -48,19 +53,30 @@ public class ReviewRestController {
     }
 
     @PutMapping(path = "/review/{reviewId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> updateReview(@PathVariable String reviewId, Review r) {
+    public ResponseEntity<String> updateReview(@PathVariable String reviewId, @RequestBody @Valid Comment c, BindingResult binding) {
 
         if (!reviewSvc.isValidReviewId(reviewId)) {
+            binding.addError(new ObjectError("reviewId", "No review found for id " + reviewId + "."));
+        }
+        
+        if (binding.hasErrors()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(generateMsgJsonString("No review found with id " + reviewId + "."));
+                    .body(generateMsgJsonString(binding.getAllErrors().toString()));
         }
 
-        reviewSvc.updateReview(reviewId, r);
+        try {
+            reviewSvc.updateReview(reviewId, c);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(generateMsgJsonString("Review " + reviewId + " successfully updated."));
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body("");
+        } catch (DataAccessException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(generateMsgJsonString("Error encountered updating review."));
+        }
+
     }
 
     @GetMapping(path = "/review/{reviewId}", produces = MediaType.APPLICATION_JSON_VALUE)
