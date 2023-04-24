@@ -1,7 +1,7 @@
 package tfip.day27workshop.model;
 
 import java.io.StringReader;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,13 +19,13 @@ public class Review {
     private Integer rating;
     private String comment;
     private Integer gameId;
-    private LocalDate posted;
+    private LocalDateTime posted;
     private List<Comment> edited;
 
     public Review() {
     }
 
-    public Review(String user, Integer rating, String comment, Integer gameId, LocalDate posted) {
+    public Review(String user, Integer rating, String comment, Integer gameId, LocalDateTime posted) {
         this.user = user;
         this.rating = rating;
         this.comment = comment;
@@ -33,7 +33,8 @@ public class Review {
         this.posted = posted;
     }
 
-    public Review(String user, Integer rating, String comment, Integer gameId, LocalDate posted, List<Comment> edited) {
+    public Review(String user, Integer rating, String comment, Integer gameId, LocalDateTime posted,
+            List<Comment> edited) {
         this.user = user;
         this.rating = rating;
         this.comment = comment;
@@ -74,11 +75,11 @@ public class Review {
         this.gameId = gameId;
     }
 
-    public LocalDate getPosted() {
+    public LocalDateTime getPosted() {
         return posted;
     }
 
-    public void setPosted(LocalDate posted) {
+    public void setPosted(LocalDateTime posted) {
         this.posted = posted;
     }
 
@@ -88,6 +89,13 @@ public class Review {
 
     public void setEdited(List<Comment> edited) {
         this.edited = edited;
+    }
+
+    public Comment getNewestComment() {
+        if (getEdited() != null && !getEdited().isEmpty()) {
+            return getEdited().stream().max((c1, c2) -> c1.getPosted().compareTo(c2.getPosted())).get();
+        }
+        return null;
     }
 
     @Override
@@ -123,6 +131,58 @@ public class Review {
         return Document.parse(toJSONString());
     }
 
+    public JsonObject toJSONNewestComment() {
+
+        Comment newestComment = getNewestComment();
+        boolean isEdited = true;
+        if (newestComment == null) {
+            isEdited = false;
+            newestComment = new Comment(getComment(), getRating(), getPosted());
+        }
+
+        return Json.createObjectBuilder()
+                .add("user", getUser())
+                .add("rating", newestComment.getRating())
+                .add("comment", newestComment.getComment())
+                .add("ID", getGameId())
+                .add("posted", getPosted().toString())
+                .add("edited", isEdited)
+                .add("timestamp", LocalDateTime.now().toString())
+                .build();
+
+    }
+
+    
+    public JsonObject toJSONHistory() {
+        
+        Comment newestComment = getNewestComment();
+        
+        if (newestComment != null) {
+            Comment originalComment = new Comment(getComment(), getRating(), getPosted());
+            addComment(originalComment);
+            getEdited().removeIf(c -> c.equals(newestComment));
+            setComment(newestComment.getComment());
+            setRating(newestComment.getRating());
+            setPosted(newestComment.getPosted());
+        }
+
+        JsonObjectBuilder ob = Json.createObjectBuilder()
+                .add("user", getUser())
+                .add("rating", getRating())
+                .add("comment", getComment())
+                .add("game_id", getGameId())
+                .add("posted", getPosted().toString());
+
+        if (getEdited() != null && getEdited().size() > 0) {
+            JsonArrayBuilder ab = Json.createArrayBuilder();
+            getEdited().sort((c1, c2) -> c1.getPosted().compareTo(c2.getPosted()));
+            getEdited().forEach(c -> ab.add(c.toJSON()));
+            ob.add("edited", ab);
+        }
+
+        return ob.add("timestamp", LocalDateTime.now().toString()).build();
+    }
+
     // unmarshalling
 
     public static Review create(String json) {
@@ -135,12 +195,12 @@ public class Review {
                 o.getInt("rating"),
                 o.getString("comment"),
                 o.getInt("game_id"),
-                LocalDate.parse(o.getString("posted")));
+                LocalDateTime.parse(o.getString("posted")));
 
         JsonArray arr = o.getJsonArray("edited");
-        if(arr != null) {
+        if (arr != null) {
             List<Comment> edited = new ArrayList<>();
-            arr.forEach(a -> edited.add(Comment.create(a.asJsonObject())));    
+            arr.forEach(a -> edited.add(Comment.create(a.asJsonObject())));
         }
 
         return r;
@@ -149,23 +209,26 @@ public class Review {
     public static Review create(Document d) {
         List<Document> list = d.getList("edited", Document.class);
         List<Comment> comments = new ArrayList<>();
-        list.forEach(l -> comments.add(Comment.create(l)));
-        
+        if(list != null && list.size() > 0) {
+            list.forEach(l -> comments.add(Comment.create(l)));    
+        }
+
         return new Review(
                 d.getString("user"),
                 d.getInteger("rating"),
                 d.getString("comment"),
                 d.getInteger("game_id"),
-                LocalDate.parse(d.getString("posted")),
+                LocalDateTime.parse(d.getString("posted")),
                 comments);
     }
 
     public void addComment(Comment c) {
-        if(getEdited() == null) {
+        if (getEdited() == null) {
             setEdited(new ArrayList<>());
         }
 
         getEdited().add(c);
     }
+
 
 }

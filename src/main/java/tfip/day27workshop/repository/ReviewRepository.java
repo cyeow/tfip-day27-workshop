@@ -51,7 +51,7 @@ public class ReviewRepository {
         Review r = Review.create(mongo.findOne(q, Document.class, COLLECTION_REVIEWS));
         r.addComment(c);
         System.out.println("review >> " + r);
-        Document result = mongo.findAndReplace(q,r.toDocument(), COLLECTION_REVIEWS);
+        Document result = mongo.findAndReplace(q, r.toDocument(), COLLECTION_REVIEWS);
         System.out.println(result);
         // return result.getObjectId("_id");
     }

@@ -1,6 +1,5 @@
 package tfip.day27workshop.service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ public class ReviewService {
 
     public String addReview(Review r) {
         if (r.getPosted() == null) {
-            r.setPosted(LocalDate.now());
+            r.setPosted(LocalDateTime.now());
         }
 
         return repo.saveReview(r);

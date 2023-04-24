@@ -19,6 +19,43 @@ public class Comment {
     @Max(value = 10)
     private Integer rating;
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((comment == null) ? 0 : comment.hashCode());
+        result = prime * result + ((rating == null) ? 0 : rating.hashCode());
+        result = prime * result + ((posted == null) ? 0 : posted.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Comment other = (Comment) obj;
+        if (comment == null) {
+            if (other.comment != null)
+                return false;
+        } else if (!comment.equals(other.comment))
+            return false;
+        if (rating == null) {
+            if (other.rating != null)
+                return false;
+        } else if (!rating.equals(other.rating))
+            return false;
+        if (posted == null) {
+            if (other.posted != null)
+                return false;
+        } else if (!posted.equals(other.posted))
+            return false;
+        return true;
+    }
+
     private LocalDateTime posted;
 
     public Comment() {

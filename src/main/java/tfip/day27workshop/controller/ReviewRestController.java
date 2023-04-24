@@ -53,12 +53,13 @@ public class ReviewRestController {
     }
 
     @PutMapping(path = "/review/{reviewId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> updateReview(@PathVariable String reviewId, @RequestBody @Valid Comment c, BindingResult binding) {
+    public ResponseEntity<String> updateReview(@PathVariable String reviewId, @RequestBody @Valid Comment c,
+            BindingResult binding) {
 
         if (!reviewSvc.isValidReviewId(reviewId)) {
             binding.addError(new ObjectError("reviewId", "No review found for id " + reviewId + "."));
         }
-        
+
         if (binding.hasErrors()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -92,7 +93,7 @@ public class ReviewRestController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(r.toJSONString());
+                .body(r.toJSONNewestComment().toString());
     }
 
     @GetMapping(path = "/review/{reviewId}/history", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -104,9 +105,13 @@ public class ReviewRestController {
                     .body(generateMsgJsonString("No review found with id " + reviewId + "."));
         }
 
+        Review r = reviewSvc.getReviewById(reviewId);
+
+        // will not return null as the reviewId has been validated
+
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("");
+                .body(r.toJSONHistory().toString());
     }
 
     private String generateMsgJsonString(String msg) {
